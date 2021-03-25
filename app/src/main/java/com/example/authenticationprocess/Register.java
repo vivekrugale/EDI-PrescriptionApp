@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -64,10 +65,11 @@ public class Register extends AppCompatActivity implements AdapterView.OnItemSel
         fAuth = FirebaseAuth.getInstance();
         firebaseDatabase = FirebaseDatabase.getInstance();
 
+        //Spinner
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.Role, android.R.layout.simple_spinner_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
-        spinner.setOnItemSelectedListener(this);
+        spinner.setOnItemSelectedListener(this); //
 
         btnregister.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -78,61 +80,6 @@ public class Register extends AppCompatActivity implements AdapterView.OnItemSel
                 final String phone = textphone.getText().toString();
 
                 function(email, password, fullname, phone, role);
-
-
-//                if (TextUtils.isEmpty(email)){
-//                    textemail.setError("Plese enter the email");
-//                    return;
-//                }
-//
-//                if (TextUtils.isEmpty(password)){
-//                    textpassword.setError("Please enter the password");
-//                    return;
-//                }
-//
-//                if (password.length() < 6){
-//                    textpassword.setError("Password must be at least 6 characters long");
-//                    return;
-//                }
-//
-//                progressBar2.setVisibility(View.VISIBLE);
-//
-//                //Register the user in firebase
-//
-//                fAuth.createUserWithEmailAndPassword(email,password).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
-//                    @Override
-//                    public void onComplete(@NonNull Task<AuthResult> task) {
-//                        if (task.isSuccessful()){
-//                            Toast.makeText(Register.this, "User Created", Toast.LENGTH_SHORT).show();
-//                            //To refer to perticular document in database
-//                            userID = fAuth.getCurrentUser().getUid();
-//                            DocumentReference documentReference = fStore.collection("users").document(userID);
-//                            //store data in document..... string as a key and object as data
-//                            Map<String,Object> user = new HashMap<>();
-//                            user.put("fName",fullname);
-//                            user.put("email",email);
-//                            user.put("phone",phone);
-//
-//                            documentReference.set(user).addOnSuccessListener(new OnSuccessListener<Void>() {
-//                                @Override
-//                                public void onSuccess(Void aVoid) {
-//                                    Log.d("TAG", "onSuccess: User profile is created for "+ userID);
-//                                }
-//                            }).addOnFailureListener(new OnFailureListener() {
-//                                @Override
-//                                public void onFailure(@NonNull Exception e) {
-//                                    Log.d("TAG", "OnFailure: "+ e.toString());
-//                                }
-//                            });
-//                            startActivity(new Intent(getApplicationContext(), MainActivity.class));
-//                        }
-//                        else {
-//                            Toast.makeText(Register.this, "Error! " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-//                            progressBar2.setVisibility(View.GONE);
-//                        }
-//
-//                    }
-//                });
             }
         });
 
@@ -145,6 +92,7 @@ public class Register extends AppCompatActivity implements AdapterView.OnItemSel
 
     }
 
+    //This is for spinner button
     @Override
     public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
         role = adapterView.getItemAtPosition(i).toString();
@@ -153,6 +101,7 @@ public class Register extends AppCompatActivity implements AdapterView.OnItemSel
     @Override
     public void onNothingSelected(AdapterView<?> adapterView) {
     }
+    //
 
 
     private void function(final String email, String password, final String fullname, final String phone, final String role) {
@@ -189,54 +138,57 @@ public class Register extends AppCompatActivity implements AdapterView.OnItemSel
             public void onComplete(@NonNull Task<AuthResult> task) {
                 if (task.isSuccessful()){
 
+                    SharedPreferences sp = getSharedPreferences("PatientsData", MODE_PRIVATE);
+                    final SharedPreferences.Editor Edit = sp.edit();
+
                     users info = new users(fullname, email, phone, role);
-                    String node = email.toString();
+                    final String nodeName = textfullname.getText().toString();
 
                     if (role.equals("Doctor")) {
+                        SharedPreferences nsp = getSharedPreferences("Navigation", MODE_PRIVATE);
+                        final SharedPreferences.Editor NAVED = nsp.edit();
 
                         FirebaseDatabase.getInstance().getReference("Doctors")
-                                .child(FirebaseAuth.getInstance().getCurrentUser().getUid())
+                                .child(nodeName)
                                 .setValue(info).addOnCompleteListener(new OnCompleteListener<Void>() {
                             @Override
                             public void onComplete(@NonNull Task<Void> task) {
+
+                                FirebaseDatabase database = FirebaseDatabase.getInstance();
+                                String nodeEmail = textemail.getText().toString();
+                                nodeEmail = nodeEmail.replace(".", "");
+
+                                final DatabaseReference myRef = database.getReference("Login").child(nodeEmail);
+                                myRef.child("Doctor").setValue("Doctor");
+                                myRef.child("DocNode").setValue(nodeName);
+
+                                String tryEmail = nodeEmail;
+
                                 Toast.makeText(Register.this, "User Created", Toast.LENGTH_SHORT).show();
-                                startActivity(new Intent(getApplicationContext(), MainActivity.class));
+                                String docNode = textfullname.getText().toString();
+                                NAVED.putString("loginRole", role);
+                                NAVED.putString("docNode", docNode);
+                                NAVED.putString("nodeEmail",tryEmail);
+                                NAVED.apply();
+
+                                Intent intent = new Intent(Register.this, MainActivity.class);
+                                intent.putExtra("docName", docNode);
+                                intent.putExtra("nodeEmail", tryEmail);
+                                startActivity(intent);
                             }
                         });
                     }
                     else if (role.equals("Patient")){
 
-                        FirebaseDatabase.getInstance().getReference("Patients")
-                                .child(FirebaseAuth.getInstance().getCurrentUser().getUid())
-                                .setValue(info).addOnCompleteListener(new OnCompleteListener<Void>() {
-                            @Override
-                            public void onComplete(@NonNull Task<Void> task) {
-                                Toast.makeText(Register.this, "User Created", Toast.LENGTH_SHORT).show();
-                                startActivity(new Intent(getApplicationContext(), doctorList.class));
-                            }
-                        });
+                        Edit.putString("Pfullname", fullname);
+                        Edit.putString("Pemail", email);
+                        Edit.putString("Pphone", phone);
+                        Edit.putString("Prole", role);
+                        Edit.apply();
+
+                        startActivity(new Intent(getApplicationContext(), doctorList.class));
                     }
 
-//                    DocumentReference documentReference = fStore.collection("Users").document(userID);
-//                    //store data in document..... string as a key and object as data
-//                    Map<String,Object> user = new HashMap<>();
-//                    user.put("Name",fullname);
-//                    user.put("Email",email);
-//                    user.put("Phone No.",phone);
-//                    user.put("Role as a",role);
-//
-//                    documentReference.set(user).addOnSuccessListener(new OnSuccessListener<Void>() {
-//                        @Override
-//                        public void onSuccess(Void aVoid) {
-//                            Log.d("TAG", "onSuccess: User profile is created for "+ userID);
-//                        }
-//                    }).addOnFailureListener(new OnFailureListener() {
-//                        @Override
-//                        public void onFailure(@NonNull Exception e) {
-//                            Log.d("TAG", "OnFailure: "+ e.toString());
-//                        }
-//                    });
-//                    startActivity(new Intent(getApplicationContext(), MainActivity.class));
                 }
                 else {
                     Toast.makeText(Register.this, "Error! " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();

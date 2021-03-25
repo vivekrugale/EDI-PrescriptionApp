@@ -8,7 +8,7 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:593551651572:android:0f796a0c8ef72e3d11a4a1",
+        "mobilesdk_app_id": "1:593551651572:android:4c15cb93db2fafdd11a4a1",
         "android_client_info": {
           "package_name": "com.example.authenticationprocess"
         }

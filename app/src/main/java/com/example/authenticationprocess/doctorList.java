@@ -7,6 +7,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -15,7 +16,10 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.firebase.ui.database.FirebaseRecyclerOptions;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
 public class doctorList extends AppCompatActivity {
@@ -33,11 +37,8 @@ public class doctorList extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         recview = (RecyclerView) findViewById(R.id.recviewd);
-
         recview.setLayoutManager(new LinearLayoutManager(this));
-
         setAdapter();
-
     }
 
     //This is for toolbar
@@ -64,6 +65,7 @@ public class doctorList extends AppCompatActivity {
                 return super.onOptionsItemSelected(item);
         }
     }
+    //
 
     private void setAdapter() {
         setOnclickListener();
@@ -79,8 +81,47 @@ public class doctorList extends AppCompatActivity {
     private void setOnclickListener() {
         listener = new myadapter.RecyclerViewClickListener() {
             @Override
-            public void onClick(View v, int position) {
-                startActivity(new Intent(getApplicationContext(), PatientView.class));
+            public void onClick(View v, final String name) {
+                SharedPreferences sp = getSharedPreferences("PatientsData", MODE_PRIVATE);
+                final SharedPreferences.Editor Edit = sp.edit();
+
+                final String fullname = sp.getString("Pfullname","");
+                final String[] email = {sp.getString("Pemail", "")};
+                String phone = sp.getString("Pphone","");
+                String role = sp.getString("Prole","");
+
+                SharedPreferences nsp = getSharedPreferences("Navigation", MODE_PRIVATE);
+                final SharedPreferences.Editor NAVED = nsp.edit();
+                NAVED.putString("loginRole",role);
+                NAVED.putString("VFPdocNode", name);
+                NAVED.putString("VFPpatNode", fullname);
+                NAVED.apply();
+
+                users info = new users(fullname, email[0], phone, role);
+
+                FirebaseDatabase.getInstance().getReference("Doctors")
+                        .child(name).child("Patients").child(fullname)
+                        .setValue(info).addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+
+                        FirebaseDatabase database = FirebaseDatabase.getInstance();
+                        email[0] = email[0].replace(".", "");
+                        final DatabaseReference myRef = database.getReference("Login").child(email[0]);
+                        myRef.child("Patient").setValue("Patient");
+                        myRef.child("DocNode").setValue(name);
+                        myRef.child("PatNode").setValue(fullname);
+
+                        Toast.makeText(doctorList.this, "Registered", Toast.LENGTH_SHORT).show();
+
+                        Intent intent = new Intent(doctorList.this, ViewForPatient.class);
+                        intent.putExtra("docName", name);
+                        intent.putExtra("patName", fullname);
+                        intent.putExtra("nodeEmail", email);
+                        startActivity(intent);
+                    }
+                });
+
             }
         };
     }

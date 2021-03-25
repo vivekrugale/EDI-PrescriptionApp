@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -14,7 +15,6 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.Toast;
 
 import com.firebase.ui.database.FirebaseRecyclerOptions;
@@ -25,53 +25,44 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
-public class MainActivity extends AppCompatActivity {
-    private myadapter.RecyclerViewClickListener listener;
+public class ViewForPatient extends AppCompatActivity {
     RecyclerView recview;
-    myadapter adapter;
-//    String nodeEmail;
+    myadapter_for_patient adapter;
+    SwipeRefreshLayout swipeRefreshLayout;
 
     @Override
-    protected void onCreate(final Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_view_for_patient);
 
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+        Toolbar toolbarP = findViewById(R.id.toolbar2);
+        setSupportActionBar(toolbarP);
 
-        recview = (RecyclerView) findViewById(R.id.recview);
+        swipeRefreshLayout = findViewById(R.id.swipeLayout);
 
-//        Intent intent = getIntent();
-//        Bundle extras = intent.getExtras();
-//        if(extras != null) {
-//            String nodeEmail = extras.getString("nodeEmail");
-//        }
+        recview = (RecyclerView)findViewById(R.id.recview);
+        recview.setLayoutManager(new LinearLayoutManager(this));
 
-        setAdapter();
-    }
-
-    private void setAdapter() {
-        setOnclickListener();
-
-//        final SharedPreferences nsp = getSharedPreferences("Navigation", MODE_PRIVATE);
-//        String nodeEmail = nsp.getString("nodeEmail", "");
-
-//        Intent intent = getIntent();
-//        String nodeEmail = intent.getStringExtra("nodeEmail");
+//        SharedPreferences nsp = getSharedPreferences("Navigation", MODE_PRIVATE);
+//        String docNode = nsp.getString("VFPdocNode", "");
+//        String patNode = nsp.getString("VFPpatNode", "");
 
         Intent i = getIntent();
         String docName = i.getStringExtra("docName");
-//
+        String patName = i.getStringExtra("patName");
+
 //        FirebaseDatabase database = FirebaseDatabase.getInstance();
 //        final DatabaseReference myRef = database.getReference("Login").child(nodeEmail);
 //        myRef.addValueEventListener(new ValueEventListener() {
 //            @Override
 //            public void onDataChange(@NonNull DataSnapshot snapshot) {
-//                String docName = snapshot.child("DocNode").getValue().toString();
+//                String docName = snapshot.child("DocNode").getValue().toString(); //OR I can extract this info in login itself and pass intent!
+//                String patName = snapshot.child("PatNode").getValue().toString();
 //
 //                SharedPreferences sp = getSharedPreferences("Snapshot", MODE_PRIVATE);
 //                final SharedPreferences.Editor editSnap = sp.edit();
 //                editSnap.putString("docNode", docName);
+//                editSnap.putString("patNode", patName);
 //                editSnap.apply();
 //            }
 //
@@ -80,40 +71,53 @@ public class MainActivity extends AppCompatActivity {
 //
 //            }
 //        });
-//
-//        SharedPreferences prefs = getSharedPreferences("Snapshot", MODE_PRIVATE);
-//        String docName = prefs.getString("docNode",""); // Doc name in main tree
 
-        FirebaseRecyclerOptions<model> options =
-                new FirebaseRecyclerOptions.Builder<model>()
-                        .setQuery(FirebaseDatabase.getInstance().getReference().child("Doctors").child(docName).child("Patients"), model.class)
-                        .build();
-        adapter = new myadapter(options, listener);
-        recview.setLayoutManager(new LinearLayoutManager(this));
-        recview.setAdapter(adapter);
-    }
-
-    private void setOnclickListener() {
-        listener = new myadapter.RecyclerViewClickListener() {
+        //THIS IS SWIPE REFRESH.........
+        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
-            public void onClick(View v, String name) {
-                SharedPreferences nsp = getSharedPreferences("Navigation", MODE_PRIVATE);
-                final SharedPreferences.Editor NAVED = nsp.edit();
-                NAVED.putString("patNode", name);
-                NAVED.apply();
+            public void onRefresh() {
+//                Intent i = getIntent();
+//                String nodeEmail = i.getStringExtra("nodeEmail");
+//
+//                FirebaseDatabase database = FirebaseDatabase.getInstance();
+//                final DatabaseReference myRef = database.getReference("Login").child(nodeEmail);
+//                myRef.addValueEventListener(new ValueEventListener() {
+//                    @Override
+//                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+//                        String docName = snapshot.child("DocNode").getValue().toString();
+//                        String patName = snapshot.child("PatNode").getValue().toString();
+//
+//                        SharedPreferences sp = getSharedPreferences("Snapshot", MODE_PRIVATE);
+//                        final SharedPreferences.Editor editSnap = sp.edit();
+//                        editSnap.putString("docNode", docName);
+//                        editSnap.putString("patNode", patName);
+//                        editSnap.apply();
+//                    }
+//
+//                    @Override
+//                    public void onCancelled(@NonNull DatabaseError error) {
+//
+//                    }
+//                });
 
-                Intent i = getIntent();
-                String nodeEmail = i.getStringExtra("nodeEmail");
+                adapter.notifyDataSetChanged();
 
-                FirebaseDatabase database = FirebaseDatabase.getInstance();
-                final DatabaseReference myRef = database.getReference("Login").child(nodeEmail);
-                myRef.child("PatNode").setValue(name);
-
-                Intent intent = new Intent(MainActivity.this, viewForDoctor.class);
-                intent.putExtra("nodeEmail", nodeEmail);
-                startActivity(intent);
+                swipeRefreshLayout.setRefreshing(false);
             }
-        };
+        });
+
+//        SharedPreferences prefs = getSharedPreferences("Snapshot", MODE_PRIVATE);
+//        final String docName = prefs.getString("docNode",""); // Doc name in main tree
+//        final String patName = prefs.getString("patNode","");
+
+        FirebaseRecyclerOptions<model_patient_recview> options =
+                new FirebaseRecyclerOptions.Builder<model_patient_recview>()
+                        .setQuery(FirebaseDatabase.getInstance().getReference().child("Doctors").child(docName).child("Patients").child(patName).child("Prescription"), model_patient_recview.class)
+                        .build();
+
+        adapter = new myadapter_for_patient(options);
+        recview.setAdapter(adapter);
+
     }
 
     //This is for toolbar
@@ -148,10 +152,11 @@ public class MainActivity extends AppCompatActivity {
                     public void onClick(DialogInterface dialog, int which) {
                         Intent i = getIntent();
                         String docName = i.getStringExtra("docName");
+                        String patName = i.getStringExtra("patName");
                         String nodeEmail = i.getStringExtra("nodeEmail");
 
                         FirebaseAuth.getInstance().getCurrentUser().delete();
-                        FirebaseDatabase.getInstance().getReference().child("Doctors").child(docName).removeValue();
+                        FirebaseDatabase.getInstance().getReference().child("Doctors").child(docName).child(patName).removeValue();
                         FirebaseDatabase.getInstance().getReference().child("Login").child(nodeEmail).removeValue();
                         startActivity(new Intent(getApplicationContext(), Register.class));
                     }
@@ -175,11 +180,9 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
         adapter.startListening();
     }
-
     @Override
     protected void onStop() {
         super.onStop();
         adapter.stopListening();
     }
-
 }

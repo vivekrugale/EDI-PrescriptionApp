@@ -1,13 +1,8 @@
 package com.example.authenticationprocess;
 
-import android.content.Context;
-import android.content.Intent;
-import android.text.Layout;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -54,11 +49,11 @@ public class myadapter extends FirebaseRecyclerAdapter<model,myadapter.myviewhol
 
         @Override
         public void onClick(View view) {
-            listener.onClick(view, getAdapterPosition());
+            listener.onClick(view, name.getText().toString().trim());
         }
     }
 
     public interface RecyclerViewClickListener{
-        void  onClick(View v, int position);
+        void onClick(View v, String name);
     }
 }
